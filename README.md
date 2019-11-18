@@ -1,4 +1,4 @@
-# :floppy_dis: Sealing SGX Data into an Untrusted Database in Rust Example
+# :floppy_disk: Sealing SGX Data into an Untrusted Database in Rust Example
 
 &nbsp;
 
