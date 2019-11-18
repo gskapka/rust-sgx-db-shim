@@ -14,11 +14,10 @@ pub mod init_enclave;
 use sgx_types::*;
 use db::DATABASE;
 use init_enclave::ENCLAVE;
-use constants::SCRATCH_PAD_SIZE;
+use enclave_api::run_sample;
+use scratch_pad::SCRATCH_PAD;
 use scratch_pad::get_scratch_pad_pointer;
-use enclave_api::{
-    run_sample
-};
+use constants::SCRATCH_PAD_SIZE;
 use std::{
     slice,
     ptr::copy_nonoverlapping,
@@ -92,6 +91,7 @@ fn seal_into_db(
 }
 
 fn main() {
+    println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..50]);
     let result = unsafe {
         run_sample(
             ENCLAVE.geteid(),
@@ -101,7 +101,10 @@ fn main() {
         )
     };
     match result {
-        sgx_status_t::SGX_SUCCESS => println!("✔ `Run` fxn success!!"),
+        sgx_status_t::SGX_SUCCESS => {
+            println!("✔ Sample run successfully!");
+            println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..50]);
+        }
         _ => {
             println!("✘ ECALL Failed: {}", result);
             return;

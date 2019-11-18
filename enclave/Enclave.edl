@@ -7,7 +7,7 @@ enclave {
     trusted {
         /* define ECALLs here. */
         public sgx_status_t run_sample(
-            [in, size=scratch_pad_size] 
+            [out, size=scratch_pad_size] 
             uint8_t* scatch_pad_pointer,
             uint32_t scratch_pad_size
         );

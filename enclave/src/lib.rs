@@ -19,7 +19,7 @@ pub type Bytes = Vec<u8>;
 
 // Ocall API
 extern "C" {
-    pub fn seal_into_db(
+    pub fn seal_into_db( // So this just needs the key passing out, we'll already have sealed the data to the given scratch_pad_pointer.
         ret_val: *mut sgx_status_t,
         key_pointer: *mut u8,
         key_size: *const u8,
@@ -36,11 +36,55 @@ extern "C" {
     ) -> sgx_status_t;
 }
 
+fn to_sealed_log<T: Copy + ContiguousMemory>(
+    sealed_data: &SgxSealedData<[T]>,
+    sealed_log: * mut u8,
+    sealed_log_size: u32
+) -> Option<* mut sgx_sealed_data_t> {
+    unsafe {
+        sealed_data
+            .to_raw_sealed_data_t(
+                sealed_log as * mut sgx_sealed_data_t,
+                sealed_log_size
+            )
+    }
+}
+
+fn seal_item_into_db(
+    key: Bytes,
+    value: Bytes,
+    scratch_pad_pointer: *mut u8,
+    scratch_pad_size: u32,
+) -> sgx_status_t { // TODO: Return a result w/ custom error type
+    println!("✔ Sealing data...");
+    let sealing_result = SgxSealedData::<[u8]>::seal_data(&key, &value[..]);
+    let sealed_data = match sealing_result {
+        Ok(x) => x,
+        Err(sgx_error) => return sgx_error
+    };
+    println!("✔ Data sealed!");
+    let option = to_sealed_log(
+        &sealed_data,
+        scratch_pad_pointer,
+        scratch_pad_size as u32,//sealed_log_size,
+    );
+    if option.is_none() {
+        return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+    }
+    println!("✔ Data sealed into scratch-pad!");
+    sgx_status_t::SGX_SUCCESS
+}
+
 #[no_mangle]
 pub extern "C" fn run_sample(
     scratch_pad_pointer: *mut u8,
-    scratch_pad_size: *const u8,
-) -> sgx_status_t {
+    scratch_pad_size: u32,
+) -> sgx_status_t { // TODO Use Result returning fxns and match against a pipeline in here
+    println!("✔ Running example inside enclave...");
+    println!("✔ Creating data...");
+    let key: Bytes = vec![1, 3, 3, 7];
+    let value: Bytes = vec![1, 2, 3, 4, 5, 6];
+    seal_item_into_db(key, value, scratch_pad_pointer, scratch_pad_size)
     /*
      * So I wanna create some data
      * seal it outside
@@ -49,27 +93,6 @@ pub extern "C" fn run_sample(
      * Then run a function that queries that hashmap for that data.
      *
      */
-    println!("✔ Running example inside enclave...");
-    println!("✔ Creating data...");
-    let key: Bytes = vec![1, 3, 3, 7];
-    let value: Bytes = vec![1, 2, 3, 4, 5, 6];
-    println!("✔ Sealing data...");
-    let sealing_result = SgxSealedData::<[u8]>::seal_data(&key, &value[..]);
-    let sealed_data = match sealing_result {
-        Ok(x) => x,
-        Err(sgx_error) => return sgx_error
-    };
-    /*
-    let option = to_sealed_log(
-        &sealed_data,
-        sealed_log_pointer, // IE Where to write this too? // NEED A SCRATCH PAD ON THE OUTSIDE!
-        sealed_log_size
-    );
-    if option.is_none() {
-        return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
-    }
-    */
-    sgx_status_t::SGX_SUCCESS
     /*
     let mut key: [u8; 3] = [107, 101, 121]; // NOTE: b"key";
     pub const MEGA_BYTE: usize = 1_000_000;
@@ -100,18 +123,4 @@ pub extern "C" fn run_sample(
     println!("✔ Final data: {:?}", final_data);
     sgx_status_t::SGX_SUCCESS
     */
-}
-
-fn to_sealed_log<T: Copy + ContiguousMemory>(
-    sealed_data: &SgxSealedData<[T]>,
-    sealed_log: * mut u8,
-    sealed_log_size: u32
-) -> Option<* mut sgx_sealed_data_t> {
-    unsafe {
-        sealed_data
-            .to_raw_sealed_data_t(
-                sealed_log as * mut sgx_sealed_data_t,
-                sealed_log_size
-            )
-    }
 }
