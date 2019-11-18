@@ -19,12 +19,12 @@ lazy_static! { // NOTE Gives us enc. as global but now can't destroy it!
         let mut home_dir = path::PathBuf::new();
         let use_token = match dirs::home_dir() {
             Some(path) => {
-                println!("[+] Home dir is {}", path.display());
+                println!("✔ [App] Home dir is {}", path.display());
                 home_dir = path;
                 true
             },
             None => {
-                println!("[-] Cannot get home dir");
+                println!("✘ [App] Cannot get home dir");
                 false
             }
         };
@@ -33,17 +33,17 @@ lazy_static! { // NOTE Gives us enc. as global but now can't destroy it!
             match fs::File::open(&token_file) {
                 Err(_) => {
                     println!(
-                        "[-] Open token file {} error! Will create one.",
+                        "✘ [App] Open token file {} error! Will create one.",
                         token_file.as_path().to_str().unwrap()
                         );
                 },
                 Ok(mut f) => {
-                    println!("[+] Open token file success! ");
+                    println!("✔ Open token file success! ");
                     match f.read(&mut launch_token) {
                         Ok(1024) => {
-                            println!("[+] Token file valid!");
+                            println!("✔ [App] Token file valid!");
                         },
-                        _ => println!("[+] Token file invalid, will create new token file"),
+                        _ => println!("✔[App] Token file invalid, will create new token file"),
                     }
                 }
             }

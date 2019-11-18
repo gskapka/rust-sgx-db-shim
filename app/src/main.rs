@@ -31,19 +31,19 @@ fn get_from_db(
     value_pointer: *mut u8,
     value_size: u32,
 ) -> sgx_status_t {
-    println!("✔ Getting from database via OCALL!");
+    println!("✔ [App] Getting from database via OCALL!");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ Outside enclave db_key: {:?}", db_key);
+    println!("✔ [App] Database key: {:?}", db_key);
     let mut data: Vec<u8> = vec![6,6,6];
     let data_length = data.len() as u32;
     let mut data_length_bytes: Vec<u8> = data_length
         .to_le_bytes()
         .to_vec();
-    println!("✔ Value pointer:  {:?}", value_pointer);
-    println!("✔ Data length:  {:?}", data_length);
-    println!("✔ Data length bytes:  {:?}", data_length);
+    println!("✔ [App] Value pointer:  {:?}", value_pointer);
+    println!("✔ [App] Data length:  {:?}", data_length);
+    println!("✔ [App] Data length bytes:  {:?}", data_length);
     data_length_bytes.append(&mut data);
     unsafe {
         copy_nonoverlapping(
@@ -63,13 +63,13 @@ fn save_to_db(
     key_size: u32,
     sealed_log_size: u32, // NOTE: Amount of scratch we used!
 ) -> sgx_status_t {
-    println!("✔ [App] Sealing into DB via OCALL...");
+    println!("✔ [App] Saving sealed data into database...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ [App] key size: {:?}", key_size);
-    println!("✔ [App] db_key: {:?}", db_key);
-    println!("✔ [App] sealed_log size: {:?}", sealed_log_size);
+    println!("✔ [App] Key size: {:?}", key_size);
+    println!("✔ [App] Db key: {:?}", db_key);
+    println!("✔ [App] Sealed log size: {:?}", sealed_log_size);
     DATABASE
         .lock()
         .unwrap()
@@ -78,29 +78,11 @@ fn save_to_db(
             SCRATCH_PAD.lock().unwrap()[..sealed_log_size as usize].to_vec() // TODO Match on this!
         );
     println!("✔ [App] Sealed data saved to database successfully!");
-    /*
-    let mut data: Vec<u8> = vec![6,6,6];
-    let data_length = data.len() as u32;
-    let mut data_length_bytes: Vec<u8> = data_length
-        .to_le_bytes()
-        .to_vec();
-    println!("✔ Value pointer:  {:?}", value_pointer);
-    println!("✔ Data length:  {:?}", data_length);
-    println!("✔ Data length bytes:  {:?}", data_length);
-    data_length_bytes.append(&mut data);
-    unsafe {
-        copy_nonoverlapping(
-            &data_length_bytes[0],
-            value_pointer,
-            data_length_bytes.len()
-        )
-    }
-    */
     sgx_status_t::SGX_SUCCESS
 }
 
 fn main() {
-    println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
+    //println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
     let result = unsafe {
         run_sample(
             ENCLAVE.geteid(),
@@ -111,11 +93,11 @@ fn main() {
     };
     match result {
         sgx_status_t::SGX_SUCCESS => {
-            println!("✔ Sample run successfully!");
-            println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
+            println!("✔ [App] Sample run successfully!");
+            //println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
         }
         _ => {
-            println!("✘ ECALL Failed: {}", result);
+            println!("✘ [App] ECALL Failed: {}", result);
             return;
         }
     };

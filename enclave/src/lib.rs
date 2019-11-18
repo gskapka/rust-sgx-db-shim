@@ -56,7 +56,7 @@ fn seal_item_into_db(
     scratch_pad_pointer: *mut u8,
     scratch_pad_size: u32,
 ) -> sgx_status_t { // TODO: Return a result w/ custom error type
-    println!("✔ Sealing data...");
+    println!("✔ [Enclave] Sealing data...");
     let extra_data: [u8; 0] = [0u8; 0]; // TODO Abstract this away!
     let sealing_result = SgxSealedData::<[u8]>::seal_data(
         &extra_data,
@@ -66,9 +66,9 @@ fn seal_item_into_db(
         Ok(x) => x,
         Err(sgx_error) => return sgx_error
     };
-    println!("✔ Data sealed!");
+    println!("✔ [Enclave] Data sealed!");
     let sealed_log_size = size_of::<sgx_sealed_data_t>() + value.len();
-    println!("✔ Sealed log size: {}", sealed_log_size);
+    println!("✔ [Enclave] Sealed log size: {}", sealed_log_size);
     let option = to_sealed_log(
         &sealed_data,
         scratch_pad_pointer,
@@ -77,8 +77,8 @@ fn seal_item_into_db(
     if option.is_none() {
         return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
     }
-    println!("✔ Sealed data written into scratch-pad!");
-    println!("✔ Sending db key & sealed data size via OCALL");
+    println!("✔ [Enclave] Sealed data written into app's scratch-pad!");
+    println!("✔ [Enclave] Sending db key & sealed data size via OCALL");
     let key_pointer: *mut u8 = &mut key[0];
     let ocall_result = unsafe {
         save_to_db(
@@ -97,8 +97,8 @@ pub extern "C" fn run_sample(
     scratch_pad_pointer: *mut u8,
     scratch_pad_size: u32,
 ) -> sgx_status_t { // TODO Use Result returning fxns and match against a pipeline in here
-    println!("✔ Running example inside enclave...");
-    println!("✔ Creating data...");
+    println!("✔ [Enclave] Running example inside enclave...");
+    println!("✔ [Enclave] Creating data...");
     let key: Bytes = vec![1, 3, 3, 7];
     let value: Bytes = vec![1, 2, 3, 4, 5, 6];
     seal_item_into_db(key, value, scratch_pad_pointer, scratch_pad_size)
