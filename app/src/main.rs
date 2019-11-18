@@ -6,11 +6,14 @@ extern crate dirs;
 
 pub mod db;
 pub mod types;
+pub mod constants;
+pub mod scratch_pad;
 pub mod init_enclave;
 
 use sgx_types::*;
 use db::DATABASE;
 use init_enclave::ENCLAVE;
+use scratch_pad::get_scratch_pad_pointer;
 use std::{
     slice,
     ptr::copy_nonoverlapping,

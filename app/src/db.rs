@@ -7,4 +7,3 @@ lazy_static! {
         db
     };
 }
-
