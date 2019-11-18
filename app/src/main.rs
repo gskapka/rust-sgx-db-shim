@@ -7,25 +7,22 @@ extern crate dirs;
 pub mod db;
 pub mod types;
 pub mod constants;
+pub mod enclave_api;
 pub mod scratch_pad;
 pub mod init_enclave;
 
 use sgx_types::*;
 use db::DATABASE;
 use init_enclave::ENCLAVE;
+use constants::SCRATCH_PAD_SIZE;
 use scratch_pad::get_scratch_pad_pointer;
+use enclave_api::{
+    run_sample
+};
 use std::{
     slice,
     ptr::copy_nonoverlapping,
 };
-
-// ECALL API
-extern {
-    pub fn run_sample(
-        eid: sgx_enclave_id_t,
-        retval: *mut sgx_status_t,
-    ) -> sgx_status_t;
-}
 
 #[no_mangle]
 pub extern "C"
@@ -99,6 +96,8 @@ fn main() {
         run_sample(
             ENCLAVE.geteid(),
             &mut sgx_status_t::SGX_SUCCESS,
+            get_scratch_pad_pointer(),
+            SCRATCH_PAD_SIZE as *const u8,
         )
     };
     match result {

@@ -3,10 +3,16 @@ enclave {
     from "sgx_stdio.edl" import *;
     from "sgx_backtrace.edl" import *;
     from "sgx_tstdc.edl" import *;
+
     trusted {
         /* define ECALLs here. */
-        public sgx_status_t run_sample();
+        public sgx_status_t run_sample(
+            [in, size=scratch_pad_size] 
+            uint8_t* scatch_pad_pointer,
+            uint32_t scratch_pad_size
+        );
     };
+
     untrusted {
         /* define OCALLs here. */
         /* TODO Fix the in and out stuff! */

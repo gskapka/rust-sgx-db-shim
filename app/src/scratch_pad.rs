@@ -1,11 +1,13 @@
-use crate::types::Bytes;
-use crate::constants::MEGA_BYTE;
 use std::sync::Mutex;
+use crate::types::Bytes;
+use crate::constants::{
+    MEGA_BYTE,
+    SCRATCH_PAD_SIZE,
+};
 
 lazy_static! {
     pub static ref SCRATCH_PAD: Mutex<Bytes> = {
-        let scratch_pad_size = 1 * MEGA_BYTE;
-        let mut scratch_pad: Vec<u8> = vec![0; scratch_pad_size];
+        let mut scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
         Mutex::new(scratch_pad)
     };
 }
