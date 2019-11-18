@@ -1,0 +1,21 @@
+enclave {
+    from "sgx_tstd.edl" import *;
+    from "sgx_stdio.edl" import *;
+    from "sgx_backtrace.edl" import *;
+    from "sgx_tstdc.edl" import *;
+    trusted {
+        /* define ECALLs here. */
+        public sgx_status_t run();
+    };
+    untrusted {
+        /* define OCALLs here. */
+        sgx_status_t get_from_db(
+            [in, out, size=key_size] 
+            uint8_t* key_pointer,
+            uint32_t key_size,
+            [out, size=value_size] 
+            uint8_t* value_pointer,
+            uint32_t value_size
+        );
+    };
+};
