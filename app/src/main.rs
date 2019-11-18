@@ -31,19 +31,22 @@ fn get_from_db(
     value_pointer: *mut u8,
     value_size: u32,
 ) -> sgx_status_t {
-    println!("✔ [App] Getting from database via OCALL!");
+    println!("✔ [App] Getting from database via OCALL...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ [App] Database key: {:?}", db_key);
-    let mut data: Vec<u8> = vec![6,6,6];
+    println!("✔ [App] Database key to query: {:?}", db_key);
+    let mut data = DATABASE
+        .lock()
+        .unwrap()
+        [db_key]
+        .clone();
+    println!("✔ [App] Data retreived from database!");
     let data_length = data.len() as u32;
     let mut data_length_bytes: Vec<u8> = data_length
         .to_le_bytes()
         .to_vec();
-    println!("✔ [App] Value pointer:  {:?}", value_pointer);
-    println!("✔ [App] Data length:  {:?}", data_length);
-    println!("✔ [App] Data length bytes:  {:?}", data_length);
+    println!("✔ [App] Copying data into enclave...");
     data_length_bytes.append(&mut data);
     unsafe {
         copy_nonoverlapping(
@@ -61,40 +64,44 @@ pub extern "C"
 fn save_to_db(
     key_pointer: *mut u8,
     key_size: u32,
-    sealed_log_size: u32, // NOTE: Amount of scratch we used!
+    sealed_log_size: u32,
+    scratch_pad_pointer: *mut u8,
 ) -> sgx_status_t {
+    let scratch_pad = unsafe {
+        slice::from_raw_parts(scratch_pad_pointer, sealed_log_size as usize)
+    };
     println!("✔ [App] Saving sealed data into database...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ [App] Key size: {:?}", key_size);
-    println!("✔ [App] Db key: {:?}", db_key);
+    println!("✔ [App] Database key: {:?}", db_key);
     println!("✔ [App] Sealed log size: {:?}", sealed_log_size);
     DATABASE
         .lock()
         .unwrap()
         .insert(
             db_key.to_vec(),
-            SCRATCH_PAD.lock().unwrap()[..sealed_log_size as usize].to_vec() // TODO Match on this!
+            scratch_pad.to_vec(),
         );
     println!("✔ [App] Sealed data saved to database successfully!");
     sgx_status_t::SGX_SUCCESS
 }
 
 fn main() {
-    //println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
+    let mut scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
+    let scratch_pad_pointer = &mut scratch_pad[0] as * mut u8;
     let result = unsafe {
         run_sample(
             ENCLAVE.geteid(),
             &mut sgx_status_t::SGX_SUCCESS,
-            get_scratch_pad_pointer(),
+            scratch_pad_pointer,
             SCRATCH_PAD_SIZE as *const u8,
         )
     };
     match result {
         sgx_status_t::SGX_SUCCESS => {
             println!("✔ [App] Sample run successfully!");
-            //println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
+            //println!("Scratch pad after: {:?}", &SCRATCH_PAD[..700]);
         }
         _ => {
             println!("✘ [App] ECALL Failed: {}", result);

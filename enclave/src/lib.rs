@@ -14,6 +14,10 @@ use std::{
     u32,
     vec::Vec,
     mem::size_of,
+    string::{
+        String,
+        ToString,
+    },
 };
 
 pub type Bytes = Vec<u8>;
@@ -25,6 +29,7 @@ extern "C" {
         key_pointer: *mut u8,
         key_size: *const u32,
         sealed_log_size: *const u32,
+        scratch_pad_pointer: *mut u8,
     ) -> sgx_status_t;
 
     pub  fn get_from_db(
@@ -50,12 +55,39 @@ fn to_sealed_log<T: Copy + ContiguousMemory>(
     }
 }
 
+fn get_item_from_db(mut key: Bytes) -> Result<sgx_status_t, String> {
+    println!("✔ [Enclave] Getting item from external db...");
+    pub const MEGA_BYTE: usize = 1_000_000;
+    pub const U32_BYTES: usize = 4;
+    let scratch_pad_size = 1 * MEGA_BYTE; // Create scratch-pad at `run_sample`!
+    let key_pointer: *mut u8 = &mut key[0];
+    let mut scratch_pad: Vec<u8> = vec![0; scratch_pad_size];
+    let scratch_pad_pointer: *mut u8 = &mut scratch_pad[0];
+    let ocall_result = unsafe {
+        get_from_db(
+            &mut sgx_status_t::SGX_SUCCESS,
+            key_pointer,
+            key.len() as *const u32,
+            scratch_pad_pointer,
+            scratch_pad_size as *const u32,
+        )
+    };
+    let mut length_of_data_arr = [0u8; U32_BYTES];
+    let bytes = &scratch_pad[..length_of_data_arr.len()];
+    length_of_data_arr.copy_from_slice(bytes);
+    let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
+    println!("✔ [Enclave] Length of data received: {:?}", length_of_data);
+    let final_data = &scratch_pad[U32_BYTES..U32_BYTES + length_of_data];
+    println!("✔ [Enclave] Final retreived data: {:?}", final_data);
+    Ok(sgx_status_t::SGX_SUCCESS)
+}
+
 fn seal_item_into_db(
     mut key: Bytes,
     value: Bytes,
     scratch_pad_pointer: *mut u8,
     scratch_pad_size: u32,
-) -> sgx_status_t { // TODO: Return a result w/ custom error type
+) -> Result<sgx_status_t, String> {
     println!("✔ [Enclave] Sealing data...");
     let extra_data: [u8; 0] = [0u8; 0]; // TODO Abstract this away!
     let sealing_result = SgxSealedData::<[u8]>::seal_data(
@@ -64,7 +96,7 @@ fn seal_item_into_db(
     );
     let sealed_data = match sealing_result {
         Ok(x) => x,
-        Err(sgx_error) => return sgx_error
+        Err(sgx_error) => return Err(sgx_error.to_string())
     };
     println!("✔ [Enclave] Data sealed!");
     let sealed_log_size = size_of::<sgx_sealed_data_t>() + value.len();
@@ -75,7 +107,7 @@ fn seal_item_into_db(
         scratch_pad_size as u32,
     );
     if option.is_none() {
-        return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+        return Err(sgx_status_t::SGX_ERROR_INVALID_PARAMETER.to_string())
     }
     println!("✔ [Enclave] Sealed data written into app's scratch-pad!");
     println!("✔ [Enclave] Sending db key & sealed data size via OCALL");
@@ -86,58 +118,27 @@ fn seal_item_into_db(
             key_pointer,
             key.len() as *const u32,
             sealed_log_size as *const u32,
+            scratch_pad_pointer,
         )
     };
 
-    sgx_status_t::SGX_SUCCESS
+    Ok(sgx_status_t::SGX_SUCCESS)
 }
 
 #[no_mangle]
 pub extern "C" fn run_sample(
-    scratch_pad_pointer: *mut u8,
+    scratch_pad_pointer: *mut u8, // TODO: Rename to `app_scratch_pad_pointer`
     scratch_pad_size: u32,
-) -> sgx_status_t { // TODO Use Result returning fxns and match against a pipeline in here
-    println!("✔ [Enclave] Running example inside enclave...");
-    println!("✔ [Enclave] Creating data...");
+) -> sgx_status_t {
+    // TODO Use Result returning fxns and match against a pipeline in here!
+    // Make an enclave scratch pad and save that pointer to state!
+    println!(
+        "✔ [Enclave] Running example inside enclave...{}",
+        "✔ [Enclave] Creating data..."
+    );
     let key: Bytes = vec![1, 3, 3, 7];
     let value: Bytes = vec![1, 2, 3, 4, 5, 6];
-    seal_item_into_db(key, value, scratch_pad_pointer, scratch_pad_size)
-    /*
-     * So I wanna create some data
-     * seal it outside
-     * save it in hash map.
-     *
-     * Then run a function that queries that hashmap for that data.
-     *
-     */
-    /*
-    let mut key: [u8; 3] = [107, 101, 121]; // NOTE: b"key";
-    pub const MEGA_BYTE: usize = 1_000_000;
-    pub const U32_BYTES: usize = 4;
-    let value_size = 1 * MEGA_BYTE;
-    let key_size = 3;
-    let key_pointer: *mut u8 = &mut key[0];
-    let mut value: Vec<u8> = vec![0; value_size];
-    let value_pointer: *mut u8 = &mut value[0];
-    println!("✔ Value before: {:?}", &value[..20]);
-    let res = unsafe {
-        get_from_db(
-            &mut sgx_status_t::SGX_SUCCESS,
-            key_pointer,
-            key_size as *const u32,
-            value_pointer,
-            value_size as *const u32,
-        )
-    };
-    println!("✔ Res after: {:?}", res);
-    println!("✔ Value after: {:?}", &value[..20]);
-    let mut length_of_data_arr = [0u8; U32_BYTES];
-    let bytes = &value[..length_of_data_arr.len()];
-    length_of_data_arr.copy_from_slice(bytes);
-    let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
-    println!("✔ Length of data as u32: {:?}", length_of_data);
-    let final_data = &value[U32_BYTES..U32_BYTES + length_of_data];
-    println!("✔ Final data: {:?}", final_data);
-    sgx_status_t::SGX_SUCCESS
-    */
+    seal_item_into_db(key.clone(), value, scratch_pad_pointer, scratch_pad_size)
+        .and_then(|_| get_item_from_db(key))
+        .unwrap()
 }
