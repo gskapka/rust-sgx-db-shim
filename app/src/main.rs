@@ -58,7 +58,7 @@ fn get_from_db(
 
 #[no_mangle]
 pub extern "C"
-fn seal_into_db(
+fn save_to_db(
     key_pointer: *mut u8,
     key_size: u32,
     value_pointer: *mut u8,
@@ -91,7 +91,7 @@ fn seal_into_db(
 }
 
 fn main() {
-    println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..50]);
+    println!("Scratch pad before: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
     let result = unsafe {
         run_sample(
             ENCLAVE.geteid(),
@@ -103,7 +103,7 @@ fn main() {
     match result {
         sgx_status_t::SGX_SUCCESS => {
             println!("✔ Sample run successfully!");
-            println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..50]);
+            println!("Scratch pad after: {:?}", &SCRATCH_PAD.lock().unwrap()[..700]);
         }
         _ => {
             println!("✘ ECALL Failed: {}", result);

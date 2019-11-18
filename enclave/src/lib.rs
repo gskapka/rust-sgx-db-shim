@@ -20,7 +20,7 @@ pub type Bytes = Vec<u8>;
 
 // Ocall API
 extern "C" {
-    pub fn seal_into_db( // So this just needs the key passing out, we'll already have sealed the data to the given scratch_pad_pointer.
+    pub fn save_to_db( // So this just needs the key passing out, we'll already have sealed the data to the given scratch_pad_pointer.
         ret_val: *mut sgx_status_t,
         key_pointer: *mut u8,
         key_size: *const u8,
@@ -70,7 +70,6 @@ fn seal_item_into_db(
     println!("✔ Data sealed!");
     let sealed_log_size = size_of::<sgx_sealed_data_t>() + value.len();
     println!("✔ Sealed log size: {}", sealed_log_size);
-
     let option = to_sealed_log(
         &sealed_data,
         scratch_pad_pointer,
@@ -79,7 +78,7 @@ fn seal_item_into_db(
     if option.is_none() {
         return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
     }
-    println!("✔ Data sealed into scratch-pad!");
+    println!("✔ Sealed data written into scratch-pad!");
     sgx_status_t::SGX_SUCCESS
 }
 

@@ -16,7 +16,7 @@ enclave {
     untrusted {
         /* define OCALLs here. */
         /* TODO Fix the in and out stuff! */
-        sgx_status_t seal_into_db(
+        sgx_status_t save_to_db(
             [out, size=key_size] 
             uint8_t* key_pointer,
             uint32_t key_size,
