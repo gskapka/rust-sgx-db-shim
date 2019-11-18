@@ -11,11 +11,17 @@ use std::{
     u32,
     vec::Vec,
 };
-// NOTE: RMing this causes duplicate lang item errs!
-// Because otherwise vec declared below imports std!
 
 // Ocall API
 extern "C" {
+    pub fn seal_into_db(
+        ret_val: *mut sgx_status_t,
+        key_pointer: *mut u8,
+        key_size:*const u8,
+        value_pointer: *mut u8,
+        value_size: *const u8,
+    ) -> sgx_status_t;
+
     pub  fn get_from_db(
         ret_val: *mut sgx_status_t,
         key_pointer: *mut u8,
@@ -26,8 +32,20 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn run() -> sgx_status_t {
-    println!("✔ Running inside enclave...");
+pub extern "C" fn run_sample() -> sgx_status_t {
+    println!("✔ Running example inside enclave...");
+    /*
+    let key: Bytes = vec![1, 3, 3, 7];
+    let value: Bytes = vec![1, 2, 3, 4, 5, 6];
+    */
+    /*
+     * So I wanna create some data
+     * seal it outside
+     * save it in hash map.
+     *
+     * Then run a function that queries that hashmap for that data.
+     *
+     */
     let mut key: [u8; 3] = [107, 101, 121]; // NOTE: b"key";
     pub const MEGA_BYTE: usize = 1_000_000;
     pub const U32_BYTES: usize = 4;

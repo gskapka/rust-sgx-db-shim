@@ -5,12 +5,22 @@ enclave {
     from "sgx_tstdc.edl" import *;
     trusted {
         /* define ECALLs here. */
-        public sgx_status_t run();
+        public sgx_status_t run_sample();
     };
     untrusted {
         /* define OCALLs here. */
+        /* TODO Fix the in and out stuff! */
+        sgx_status_t seal_into_db(
+            [out, size=key_size] 
+            uint8_t* key_pointer,
+            uint32_t key_size,
+            [out, size=value_size] 
+            uint8_t* value_pointer,
+            uint32_t value_size
+        );
+
         sgx_status_t get_from_db(
-            [in, out, size=key_size] 
+            [out, size=key_size] 
             uint8_t* key_pointer,
             uint32_t key_size,
             [out, size=value_size] 
