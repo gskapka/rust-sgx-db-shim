@@ -68,7 +68,11 @@ __`❍ cd bin && ./app`__
 
 ### :black_nib: Notes
 
-The above build steps are monstrously fragile. Hopefully there's enough version-specific information above plus pinned dependencies inside the example to make it less so.
+ - The above build steps are monstrously fragile. Hopefully there's enough version-specific information above plus pinned dependencies inside the example to make it less so.
+
+ - Note also that the method employed in this demonstration involves using a scratch-area of allocated memory that's larger than the size of data you expect to save/retrieve. This scratch space is needed both inside the enclave and externally in the app itself.
+
+ - A second method could be employed to remove the above restriction, at the cost of each database call requiring two enclave boundary crossings rather than one in order to first pass in or out the size of the data in question.
 
 &nbsp;
 
