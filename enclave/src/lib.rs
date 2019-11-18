@@ -13,6 +13,7 @@ use sgx_types::marker::ContiguousMemory;
 use std::{
     u32,
     vec::Vec,
+    mem::size_of,
 };
 
 pub type Bytes = Vec<u8>;
@@ -57,16 +58,23 @@ fn seal_item_into_db(
     scratch_pad_size: u32,
 ) -> sgx_status_t { // TODO: Return a result w/ custom error type
     println!("✔ Sealing data...");
-    let sealing_result = SgxSealedData::<[u8]>::seal_data(&key, &value[..]);
+    let extra_data: [u8; 0] = [0u8; 0]; // TODO Abstract this away!
+    let sealing_result = SgxSealedData::<[u8]>::seal_data(
+        &extra_data,
+        &value[..]
+    );
     let sealed_data = match sealing_result {
         Ok(x) => x,
         Err(sgx_error) => return sgx_error
     };
     println!("✔ Data sealed!");
+    let sealed_log_size = size_of::<sgx_sealed_data_t>() + value.len();
+    println!("✔ Sealed log size: {}", sealed_log_size);
+
     let option = to_sealed_log(
         &sealed_data,
         scratch_pad_pointer,
-        scratch_pad_size as u32,//sealed_log_size,
+        scratch_pad_size as u32,
     );
     if option.is_none() {
         return sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
