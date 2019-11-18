@@ -63,13 +63,21 @@ fn save_to_db(
     key_size: u32,
     sealed_log_size: u32, // NOTE: Amount of scratch we used!
 ) -> sgx_status_t {
-    println!("✔ Sealing into DB via OCALL!");
+    println!("✔ [App] Sealing into DB via OCALL...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ Outside enclave db_key: {:?}", db_key);
-    println!("✔ Outside enclave key size: {:?}", key_size);
-    println!("✔ Outside enclave sealed_log size: {:?}", sealed_log_size);
+    println!("✔ [App] key size: {:?}", key_size);
+    println!("✔ [App] db_key: {:?}", db_key);
+    println!("✔ [App] sealed_log size: {:?}", sealed_log_size);
+    DATABASE
+        .lock()
+        .unwrap()
+        .insert(
+            db_key.to_vec(),
+            SCRATCH_PAD.lock().unwrap()[..sealed_log_size as usize].to_vec() // TODO Match on this!
+        );
+    println!("✔ [App] Sealed data saved to database successfully!");
     /*
     let mut data: Vec<u8> = vec![6,6,6];
     let data_length = data.len() as u32;
