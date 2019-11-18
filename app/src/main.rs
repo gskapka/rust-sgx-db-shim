@@ -61,15 +61,16 @@ pub extern "C"
 fn save_to_db(
     key_pointer: *mut u8,
     key_size: u32,
-    value_pointer: *mut u8,
-    value_size: u32,
+    sealed_log_size: u32, // NOTE: Amount of scratch we used!
 ) -> sgx_status_t {
     println!("✔ Sealing into DB via OCALL!");
-    /*
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
     println!("✔ Outside enclave db_key: {:?}", db_key);
+    println!("✔ Outside enclave key size: {:?}", key_size);
+    println!("✔ Outside enclave sealed_log size: {:?}", sealed_log_size);
+    /*
     let mut data: Vec<u8> = vec![6,6,6];
     let data_length = data.len() as u32;
     let mut data_length_bytes: Vec<u8> = data_length
