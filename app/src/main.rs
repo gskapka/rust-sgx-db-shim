@@ -43,16 +43,16 @@ fn get_from_db(
         .clone();
     println!("✔ [App] Data retreived from database!");
     let data_length = data.len() as u32;
-    let mut data_length_bytes: Vec<u8> = data_length
+    let mut final_bytes_to_copy: Vec<u8> = data_length
         .to_le_bytes()
         .to_vec();
     println!("✔ [App] Copying data into enclave...");
-    data_length_bytes.append(&mut data);
+    final_bytes_to_copy.append(&mut data);
     unsafe {
         copy_nonoverlapping(
-            &data_length_bytes[0],
+            &final_bytes_to_copy[0] as *const u8,
             value_pointer,
-            data_length_bytes.len()
+            final_bytes_to_copy.len()
         )
     }
     sgx_status_t::SGX_SUCCESS
@@ -67,7 +67,9 @@ fn save_to_db(
     sealed_log_size: u32,
     scratch_pad_pointer: *mut u8,
 ) -> sgx_status_t {
-    let scratch_pad = unsafe {
+
+    println!("✔ scratch pad pointer: {:?}", scratch_pad_pointer);
+    let data_from_scratch_pad = unsafe {
         slice::from_raw_parts(scratch_pad_pointer, sealed_log_size as usize)
     };
     println!("✔ [App] Saving sealed data into database...");
@@ -81,7 +83,7 @@ fn save_to_db(
         .unwrap()
         .insert(
             db_key.to_vec(),
-            scratch_pad.to_vec(),
+            data_from_scratch_pad.to_vec(),
         );
     println!("✔ [App] Sealed data saved to database successfully!");
     sgx_status_t::SGX_SUCCESS
@@ -89,7 +91,7 @@ fn save_to_db(
 
 fn main() {
     let mut scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
-    let scratch_pad_pointer = &mut scratch_pad[0] as * mut u8;
+    let scratch_pad_pointer: *mut u8 = &mut scratch_pad[0];
     let result = unsafe {
         run_sample(
             ENCLAVE.geteid(),
