@@ -2,7 +2,7 @@
 
 &nbsp;
 
-A example of a database shim for sealing enclave data in an untrusted, external database, written in Rust.
+A example of a database shim for sealing enclave data in an untrusted, external database. Written in Rust.
 
 ***
 

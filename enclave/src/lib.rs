@@ -74,13 +74,25 @@ fn from_sealed_log_for_slice<'a, T: Copy + ContiguousMemory>(
     }
 }
 
+fn get_length_of_data_in_scratch_pad(scratch_pad: &Bytes) -> usize {
+    let mut length_of_data_arr = [0u8; U32_NUM_BYTES];
+    let bytes = &scratch_pad[..U32_NUM_BYTES];
+    length_of_data_arr.copy_from_slice(bytes);
+    u32::from_le_bytes(length_of_data_arr) as usize
+}
+
+fn get_data_from_scratch_pad(scratch_pad: &Bytes) -> Bytes {
+    let length_of_data = get_length_of_data_in_scratch_pad(scratch_pad);
+    scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec()
+}
+
 fn get_item_from_db(
     mut key: Bytes,
-    enclave_scratch_pad: &mut Bytes,
+    scratch_pad: &mut Bytes,
 ) -> Result<sgx_status_t, String> {
     info!("✔ [Enclave] Getting item from external db...");
     let key_pointer: *mut u8 = &mut key[0];
-    let enclave_scratch_pad_pointer: *mut u8 = &mut enclave_scratch_pad[0];
+    let enclave_scratch_pad_pointer: *mut u8 = &mut scratch_pad[0];
     unsafe {
         get_from_db(
             &mut sgx_status_t::SGX_SUCCESS,
@@ -90,38 +102,32 @@ fn get_item_from_db(
             SCRATCH_PAD_SIZE as *const u32,
         )
     };
-    let mut length_of_data_arr = [0u8; U32_NUM_BYTES];
-    let bytes = &enclave_scratch_pad[..length_of_data_arr.len()];
-    length_of_data_arr.copy_from_slice(bytes);
-    let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
-    trace!("✔ [Enclave] Length of data received: {:?}", length_of_data);
-    let final_data = enclave_scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
-    trace!("✔ [Enclave] Final retrieved data length: {:?}", final_data.len());
-    let mut copied_vector = Vec::new();
-    for i in 0..final_data.len() {
-        copied_vector.push(final_data[i]);
-    }
-    let copied_pointer: *mut u8 = &mut copied_vector[0];
-    let x = from_sealed_log_for_slice::<u8>(
-        copied_pointer,
-        final_data.len() as u32
+    let mut data = get_data_from_scratch_pad(&scratch_pad);
+    info!("✔ [Enclave] External data written to enclave's scratch pad!");
+    trace!("✔ [Enclave] Final retrieved data length: {:?}", data.len());
+    let data_pointer: *mut u8 = &mut data[0];
+    let maybe_sealed_data = from_sealed_log_for_slice::<u8>(
+        data_pointer,
+        data.len() as u32
     );
-    let y = match x {
-        Some(data) => data,
+    let sealed_data = match maybe_sealed_data {
+        Some(sealed_data) => sealed_data,
         None => return Err(
             sgx_status_t::SGX_ERROR_INVALID_PARAMETER.to_string()
         )
     };
-    trace!("✔ [Enclave] Additional text: {:?}",y.get_additional_txt());
-    trace!("✔ [Enclave] Encrypted text: {:?}", y.get_encrypt_txt());
-    trace!("✔ [Enclave] Payload: {:?}", y.get_payload_size());
-    let unsealed_data = match y.unseal_data() {
-        Ok(data) => data,
+    trace!("✔ [Enclave] Payload: {:?}", sealed_data.get_payload_size());
+    trace!("✔ [Enclave] Encrypted text: {:?}", sealed_data.get_encrypt_txt());
+    trace!("✔ [Enclave] Additional text: {:?}", sealed_data.get_additional_txt());
+    let unsealed_data = match sealed_data.unseal_data() {
+        Ok(unsealed_data) => unsealed_data,
         Err(e) => return Err(e.to_string())
     };
-    let something = unsealed_data.get_decrypt_txt();
-    let data: DatabaseKeyAndValue = serde_cbor::from_slice(something).unwrap();
-    info!("✔ [Enclave] Final unsealed data: {:?}", data);
+    let cbor_encoded_slice = unsealed_data.get_decrypt_txt();
+    let final_data: DatabaseKeyAndValue = serde_cbor::from_slice(
+        cbor_encoded_slice
+    ).unwrap();
+    info!("✔ [Enclave] Final unsealed data: {:?}", final_data);
     Ok(sgx_status_t::SGX_SUCCESS)
 }
 
@@ -141,7 +147,7 @@ fn seal_item_into_db(
         encoded_slice,
     );
     let sealed_data = match sealing_result {
-        Ok(x) => x,
+        Ok(sealed_data) => sealed_data,
         Err(sgx_error) => return Err(sgx_error.to_string())
     };
     trace!("✔ [Enclave] Sealed-data additional data: {:?}", sealed_data.get_additional_txt());
