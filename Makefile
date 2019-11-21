@@ -84,7 +84,7 @@ App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 App_Rust_Path := ./app/target/release
 App_Rust_Src := $(wildcard ./app/src/*.rs)
 App_Enclave_u_Object :=app/libEnclave_u.a
-App_Name := bin/app
+App_Name := bin/sealed_db_app
 
 ######## Enclave Settings ########
 
@@ -141,7 +141,7 @@ $(App_Name): $(App_Enclave_u_Object) $(App_Rust_Src)
 	@cd app && SGX_SDK=$(SGX_SDK) cargo build $(App_Rust_Flags)
 	@echo "Cargo  =>  $@"
 	mkdir -p bin
-	cp $(App_Rust_Path)/app ./bin
+	cp $(App_Rust_Path)/sealed_db_app ./bin/sealed_db_app
 
 ######## Enclave Objects ########
 

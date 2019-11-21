@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "sealed_db_app"
 version = "1.0.0"
 authors = ["Greg Kapka <greg@kapka.co.u>"]
 build = "build.rs"

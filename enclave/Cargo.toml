@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = ["Greg Kapka, <greg@kapka.co.uk>"]
 
 [lib]
-name = "sealed_db_example"
+name = "sealed_db_enc"
 crate-type = ["staticlib"]
 
 [features]
