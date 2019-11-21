@@ -55,7 +55,7 @@ __`❍ make`__
 
 7) After the above build, simply:
 
-__`❍ cd bin && ./app`__
+__`❍ cd bin && RUST_LOG=trace ./app`__
 
 ```
 ```
@@ -67,6 +67,8 @@ __`❍ cd bin && ./app`__
 &nbsp;
 
 ### :black_nib: Notes
+
+- The sample has tracing to see what's going on. Run with __`RUST_LOG=trace`__ to see the traces.
 
  - The above build steps are monstrously fragile. Hopefully there's enough version-specific information above plus pinned dependencies inside the example to make it less so.
 
