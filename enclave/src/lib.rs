@@ -1,14 +1,15 @@
 #![cfg_attr(not(target_env = "sgx"), no_std)]
 #![cfg_attr(target_env = "sgx", feature(rustc_private))]
 
+#[macro_use] extern crate log;
+#[macro_use] extern crate serde_derive;
 #[cfg(not(target_env = "sgx"))]
-#[macro_use]
-extern crate sgx_tstd as std;
+#[macro_use] extern crate sgx_tstd as std;
+
 extern crate sgx_types;
 extern crate sgx_tseal;
-#[macro_use]
-extern crate serde_derive;
 extern crate serde_cbor;
+extern crate env_logger;
 
 pub mod ocall_api;
 

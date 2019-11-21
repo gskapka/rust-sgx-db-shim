@@ -17,10 +17,12 @@ sgx_types = { path = "../../../sgx_types" }
 sgx_tseal = { path = "../../../sgx_tseal" }
 
 [dependencies]
+log = { git = "https://github.com/mesalock-linux/log-sgx" }
 serde = { git = "https://github.com/mesalock-linux/serde-sgx" }
 lazy_static = { version = "1.1.0", features = ["spin_no_std"] }
 serde_cbor = { git = "https://github.com/mesalock-linux/cbor-sgx" }
 serde_derive = { git = "https://github.com/mesalock-linux/serde-sgx" }
+env_logger = { git = "https://github.com/mesalock-linux/env_logger-sgx" }
 
 [patch.'https://github.com/baidu/rust-sgx-sdk.git']
 sgx_tstd = { path = "../../../sgx_tstd" }
