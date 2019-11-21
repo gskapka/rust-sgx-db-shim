@@ -1,8 +1,9 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate sgx_types;
-extern crate sgx_urts;
 extern crate dirs;
+extern crate sgx_urts;
+extern crate sgx_types;
+extern crate env_logger;
+#[macro_use] extern crate log;
+#[macro_use] extern crate lazy_static;
 
 pub mod db;
 pub mod types;
@@ -28,22 +29,22 @@ fn get_from_db(
     value_pointer: *mut u8,
     _value_size: u32, // NOTE: Used only in EDL!
 ) -> sgx_status_t {
-    println!("✔ [App] Getting from database via OCALL...");
+    info!("✔ [App] Getting from database via OCALL...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ [App] Database key to query: {:?}", db_key);
+    trace!("✔ [App] Database key to query: {:?}", db_key);
     let mut data = DATABASE
         .lock()
         .unwrap()
         [db_key]
         .clone();
-    println!("✔ [App] Data retreived from database!");
+    info!("✔ [App] Data retreived from database!");
     let data_length = data.len() as u32;
     let mut final_bytes_to_copy: Vec<u8> = data_length
         .to_le_bytes()
         .to_vec();
-    println!("✔ [App] Copying data into enclave...");
+    info!("✔ [App] Copying data into enclave...");
     final_bytes_to_copy.append(&mut data);
     unsafe {
         copy_nonoverlapping(
@@ -67,12 +68,12 @@ fn save_to_db(
     let data_from_scratch_pad = unsafe {
         slice::from_raw_parts(scratch_pad_pointer, sealed_log_size as usize)
     };
-    println!("✔ [App] Saving sealed data into database...");
+    info!("✔ [App] Saving sealed data into database...");
     let db_key = unsafe {
         slice::from_raw_parts(key_pointer, key_size as usize)
     };
-    println!("✔ [App] Database key: {:?}", db_key);
-    println!("✔ [App] Sealed log size: {:?}", sealed_log_size);
+    trace!("✔ [App] Database key: {:?}", db_key);
+    trace!("✔ [App] Sealed log size: {:?}", sealed_log_size);
     DATABASE
         .lock()
         .unwrap()
@@ -80,11 +81,12 @@ fn save_to_db(
             db_key.to_vec(),
             data_from_scratch_pad.to_vec(),
         );
-    println!("✔ [App] Sealed data saved to database successfully!");
+    info!("✔ [App] Sealed data saved to database successfully!");
     sgx_status_t::SGX_SUCCESS
 }
 
 fn main() {
+    env_logger::init();
     let mut scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
     let scratch_pad_pointer: *mut u8 = &mut scratch_pad[0];
     let result = unsafe {
@@ -97,10 +99,10 @@ fn main() {
     };
     match result {
         sgx_status_t::SGX_SUCCESS => {
-            println!("✔ [App] Sample run successfully!");
+            info!("✔ [App] Sample run successfully!");
         }
         _ => {
-            println!("✘ [App] ECALL Failed: {}", result);
+            info!("✘ [App] ECALL Failed: {}", result);
             return;
         }
     };
