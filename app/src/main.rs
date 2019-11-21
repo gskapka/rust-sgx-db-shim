@@ -64,8 +64,6 @@ fn save_to_db(
     sealed_log_size: u32,
     scratch_pad_pointer: *mut u8,
 ) -> sgx_status_t {
-
-    println!("✔ scratch pad pointer: {:?}", scratch_pad_pointer);
     let data_from_scratch_pad = unsafe {
         slice::from_raw_parts(scratch_pad_pointer, sealed_log_size as usize)
     };

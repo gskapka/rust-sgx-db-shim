@@ -1,10 +1,10 @@
 [package]
-name = "Zlibsampleenclave"
+name = "SealedDBExample"
 version = "1.0.0"
-authors = ["Baidu"]
+authors = ["Greg Kapka, <greg@kapka.co.uk>"]
 
 [lib]
-name = "zlibsampleenclave"
+name = "sealed_db_example"
 crate-type = ["staticlib"]
 
 [features]
