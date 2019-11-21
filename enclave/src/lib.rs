@@ -24,10 +24,10 @@ use std::{
     },
 };
 
-// TODO: Move to dirs
 pub type Bytes = Vec<u8>;
-pub const MEGA_BYTE: usize = 1_000_000;
 pub const U32_NUM_BYTES: usize = 4;
+pub const MEGA_BYTE: usize = 1_000_000;
+pub const SCRATCH_PAD_SIZE: usize = 1 * MEGA_BYTE;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 struct DatabaseKeyAndValue {
@@ -87,28 +87,29 @@ fn from_sealed_log_for_slice<'a, T: Copy + ContiguousMemory>(
     }
 }
 
-fn get_item_from_db(mut key: Bytes) -> Result<sgx_status_t, String> {
+fn get_item_from_db(
+    mut key: Bytes,
+    mut enclave_scratch_pad: &mut Bytes,
+) -> Result<sgx_status_t, String> {
     println!("✔ [Enclave] Getting item from external db...");
-    let scratch_pad_size = 1 * MEGA_BYTE; // Create scratch-pad at `run_sample`!
     let key_pointer: *mut u8 = &mut key[0];
-    let mut scratch_pad: Vec<u8> = vec![0; scratch_pad_size];
-    let scratch_pad_pointer: *mut u8 = &mut scratch_pad[0];
-    let data_pointer: *mut u8 = &mut scratch_pad[U32_NUM_BYTES];
+    let enclave_scratch_pad_pointer: *mut u8 = &mut enclave_scratch_pad[0];
+    let data_pointer: *mut u8 = &mut enclave_scratch_pad[U32_NUM_BYTES];
     let ocall_result = unsafe {
         get_from_db(
             &mut sgx_status_t::SGX_SUCCESS,
             key_pointer,
             key.len() as *const u32,
-            scratch_pad_pointer,
-            scratch_pad_size as *const u32,
+            enclave_scratch_pad_pointer,
+            SCRATCH_PAD_SIZE as *const u32,
         )
     };
     let mut length_of_data_arr = [0u8; U32_NUM_BYTES];
-    let bytes = &scratch_pad[..length_of_data_arr.len()];
+    let bytes = &enclave_scratch_pad[..length_of_data_arr.len()];
     length_of_data_arr.copy_from_slice(bytes);
     let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
     println!("✔ [Enclave] Length of data received: {:?}", length_of_data);
-    let mut final_data = scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
+    let mut final_data = enclave_scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
     let final_data_pointer: *mut u8 = &mut final_data[0].clone();
     println!("✔ [Enclave] Final retrieved data length: {:?}", final_data.len());
 
@@ -211,12 +212,11 @@ pub extern "C" fn run_sample(
     app_scratch_pad_pointer: *mut u8,
     scratch_pad_size: u32,
 ) -> sgx_status_t {
-    // TODO Use Result returning fxns and match against a pipeline in here!
-    // Make an enclave scratch pad and save that pointer to state!
     println!(
         "✔ [Enclave] Running example inside enclave...{}",
         "✔ [Enclave] Creating data..."
     );
+    let mut enclave_scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
     let key: Bytes = vec![6, 6, 6];
     let value: Bytes = vec![1, 3, 3, 7];
     seal_item_into_db(
@@ -225,6 +225,6 @@ pub extern "C" fn run_sample(
         app_scratch_pad_pointer,
         scratch_pad_size
     )
-        .and_then(|_| get_item_from_db(key))
+        .and_then(|_| get_item_from_db(key, &mut enclave_scratch_pad))
         .unwrap()
 }
