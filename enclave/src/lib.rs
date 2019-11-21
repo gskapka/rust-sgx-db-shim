@@ -23,7 +23,6 @@ use std::{
     u32,
     vec::Vec,
     mem::size_of,
-    ptr::copy_nonoverlapping,
     string::{
         String,
         ToString,
@@ -76,13 +75,12 @@ fn from_sealed_log_for_slice<'a, T: Copy + ContiguousMemory>(
 
 fn get_item_from_db(
     mut key: Bytes,
-    mut enclave_scratch_pad: &mut Bytes,
+    enclave_scratch_pad: &mut Bytes,
 ) -> Result<sgx_status_t, String> {
     println!("✔ [Enclave] Getting item from external db...");
     let key_pointer: *mut u8 = &mut key[0];
     let enclave_scratch_pad_pointer: *mut u8 = &mut enclave_scratch_pad[0];
-    let data_pointer: *mut u8 = &mut enclave_scratch_pad[U32_NUM_BYTES];
-    let ocall_result = unsafe {
+    unsafe {
         get_from_db(
             &mut sgx_status_t::SGX_SUCCESS,
             key_pointer,
@@ -96,23 +94,8 @@ fn get_item_from_db(
     length_of_data_arr.copy_from_slice(bytes);
     let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
     println!("✔ [Enclave] Length of data received: {:?}", length_of_data);
-    let mut final_data = enclave_scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
-    let final_data_pointer: *mut u8 = &mut final_data[0].clone();
+    let final_data = enclave_scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
     println!("✔ [Enclave] Final retrieved data length: {:?}", final_data.len());
-
-    // WTF If I remove this next line it fails!!
-    println!("✔ final data pointer: {:?}", final_data_pointer as *mut sgx_sealed_data_t);
-
-    let maybe_sealed_data = from_sealed_log_for_slice::<u8>(
-        final_data_pointer,
-        final_data.len() as u32,
-    );
-    let sealed_data = match maybe_sealed_data {
-        Some(data) => data,
-        None => return Err(
-            sgx_status_t::SGX_ERROR_INVALID_PARAMETER.to_string()
-        )
-    };
     let mut copied_vector = Vec::new();
     for i in 0..final_data.len() {
         copied_vector.push(final_data[i]);
