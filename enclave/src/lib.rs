@@ -78,7 +78,7 @@ fn get_item_from_db(
     mut key: Bytes,
     enclave_scratch_pad: &mut Bytes,
 ) -> Result<sgx_status_t, String> {
-    println!("✔ [Enclave] Getting item from external db...");
+    info!("✔ [Enclave] Getting item from external db...");
     let key_pointer: *mut u8 = &mut key[0];
     let enclave_scratch_pad_pointer: *mut u8 = &mut enclave_scratch_pad[0];
     unsafe {
@@ -94,9 +94,9 @@ fn get_item_from_db(
     let bytes = &enclave_scratch_pad[..length_of_data_arr.len()];
     length_of_data_arr.copy_from_slice(bytes);
     let length_of_data = u32::from_le_bytes(length_of_data_arr) as usize;
-    println!("✔ [Enclave] Length of data received: {:?}", length_of_data);
+    trace!("✔ [Enclave] Length of data received: {:?}", length_of_data);
     let final_data = enclave_scratch_pad[U32_NUM_BYTES..U32_NUM_BYTES + length_of_data].to_vec();
-    println!("✔ [Enclave] Final retrieved data length: {:?}", final_data.len());
+    trace!("✔ [Enclave] Final retrieved data length: {:?}", final_data.len());
     let mut copied_vector = Vec::new();
     for i in 0..final_data.len() {
         copied_vector.push(final_data[i]);
@@ -112,16 +112,16 @@ fn get_item_from_db(
             sgx_status_t::SGX_ERROR_INVALID_PARAMETER.to_string()
         )
     };
-    println!("✔ [Enclave] Additional text: {:?}",y.get_additional_txt());
-    println!("✔ [Enclave] Encrypted text: {:?}", y.get_encrypt_txt());
-    println!("✔ [Enclave] Payload: {:?}", y.get_payload_size());
+    trace!("✔ [Enclave] Additional text: {:?}",y.get_additional_txt());
+    trace!("✔ [Enclave] Encrypted text: {:?}", y.get_encrypt_txt());
+    trace!("✔ [Enclave] Payload: {:?}", y.get_payload_size());
     let unsealed_data = match y.unseal_data() {
         Ok(data) => data,
         Err(e) => return Err(e.to_string())
     };
     let something = unsealed_data.get_decrypt_txt();
     let data: DatabaseKeyAndValue = serde_cbor::from_slice(something).unwrap();
-    println!("✔ [Enclave] Final unsealed data: {:?}", data);
+    info!("✔ [Enclave] Final unsealed data: {:?}", data);
     Ok(sgx_status_t::SGX_SUCCESS)
 }
 
@@ -130,9 +130,9 @@ fn seal_item_into_db(
     value: Bytes,
     scratch_pad_pointer: *mut u8,
 ) -> Result<sgx_status_t, String> {
-    println!("✔ [Enclave] Sealing data...");
+    info!("✔ [Enclave] Sealing data...");
     let data = DatabaseKeyAndValue::new(key.clone(), value);
-    println!("✔ [Enclave] Data to seal: {:?}", data);
+    trace!("✔ [Enclave] Data to seal: {:?}", data);
     let encoded_data = serde_cbor::to_vec(&data).unwrap();
     let encoded_slice = encoded_data.as_slice();
     let extra_data: [u8; 0] = [0u8; 0]; // TODO Abstract this away!
@@ -144,16 +144,16 @@ fn seal_item_into_db(
         Ok(x) => x,
         Err(sgx_error) => return Err(sgx_error.to_string())
     };
-    println!("✔ [Enclave] Sealed-data additional data: {:?}", sealed_data.get_additional_txt());
-    println!("✔ [Enclave] Sealed-data encrypted txt: {:?}", sealed_data.get_encrypt_txt());
-    println!("✔ [Enclave] Sealed-data payload size: {:?}", sealed_data.get_payload_size());
-    println!("✔ [Enclave] Raw sealed data size: {:?}", SgxSealedData::<u8>::calc_raw_sealed_data_size(
+    trace!("✔ [Enclave] Sealed-data additional data: {:?}", sealed_data.get_additional_txt());
+    trace!("✔ [Enclave] Sealed-data encrypted txt: {:?}", sealed_data.get_encrypt_txt());
+    trace!("✔ [Enclave] Sealed-data payload size: {:?}", sealed_data.get_payload_size());
+    trace!("✔ [Enclave] Raw sealed data size: {:?}", SgxSealedData::<u8>::calc_raw_sealed_data_size(
         sealed_data.get_add_mac_txt_len(),
         sealed_data.get_encrypt_txt_len(),
     ));
-    println!("✔ [Enclave] Data sealed successfully!");
+    trace!("✔ [Enclave] Data sealed successfully!");
     let sealed_log_size = size_of::<sgx_sealed_data_t>() + encoded_slice.len();
-    println!("✔ [Enclave] Sealed log size: {}", sealed_log_size);
+    trace!("✔ [Enclave] Sealed log size: {}", sealed_log_size);
     let option = to_sealed_log_for_slice(
         &sealed_data,
         scratch_pad_pointer,
@@ -162,8 +162,8 @@ fn seal_item_into_db(
     if option.is_none() {
         return Err(sgx_status_t::SGX_ERROR_INVALID_PARAMETER.to_string())
     }
-    println!("✔ [Enclave] Sealed data written into app's scratch-pad!");
-    println!("✔ [Enclave] Sending db key & sealed data size via OCALL");
+    info!("✔ [Enclave] Sealed data written into app's scratch-pad!");
+    info!("✔ [Enclave] Sending db key & sealed data size via OCALL...");
     let key_pointer: *mut u8 = &mut key[0];
     unsafe {
         save_to_db(
@@ -182,7 +182,8 @@ pub extern "C" fn run_sample(
     app_scratch_pad_pointer: *mut u8,
     _app_scratch_pad_size: u32,
 ) -> sgx_status_t {
-    println!(
+    env_logger::init();
+    info!(
         "✔ [Enclave] Running example inside enclave...{}",
         "✔ [Enclave] Creating data..."
     );
