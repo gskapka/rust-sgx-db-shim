@@ -97,13 +97,12 @@ fn main() {
             ENCLAVE.geteid(),
             &mut sgx_status_t::SGX_SUCCESS,
             scratch_pad_pointer,
-            SCRATCH_PAD_SIZE as *const u8,
+            scratch_pad.len() as *const u8,
         )
     };
     match result {
         sgx_status_t::SGX_SUCCESS => {
             println!("✔ [App] Sample run successfully!");
-            //println!("Scratch pad after: {:?}", &SCRATCH_PAD[..700]);
         }
         _ => {
             println!("✘ [App] ECALL Failed: {}", result);

@@ -158,7 +158,6 @@ fn seal_item_into_db(
     mut key: Bytes,
     value: Bytes,
     scratch_pad_pointer: *mut u8,
-    scratch_pad_size: u32,
 ) -> Result<sgx_status_t, String> {
     println!("✔ [Enclave] Sealing data...");
     let data = DatabaseKeyAndValue::new(key.clone(), value);
@@ -210,7 +209,7 @@ fn seal_item_into_db(
 #[no_mangle]
 pub extern "C" fn run_sample(
     app_scratch_pad_pointer: *mut u8,
-    scratch_pad_size: u32,
+    _app_scratch_pad_size: u32,
 ) -> sgx_status_t {
     println!(
         "✔ [Enclave] Running example inside enclave...{}",
@@ -219,12 +218,7 @@ pub extern "C" fn run_sample(
     let mut enclave_scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
     let key: Bytes = vec![6, 6, 6];
     let value: Bytes = vec![1, 3, 3, 7];
-    seal_item_into_db(
-        key.clone(),
-        value,
-        app_scratch_pad_pointer,
-        scratch_pad_size
-    )
+    seal_item_into_db(key.clone(), value, app_scratch_pad_pointer)
         .and_then(|_| get_item_from_db(key, &mut enclave_scratch_pad))
         .unwrap()
 }
