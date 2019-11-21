@@ -183,10 +183,8 @@ pub extern "C" fn run_sample(
     _app_scratch_pad_size: u32,
 ) -> sgx_status_t {
     env_logger::init();
-    info!(
-        "✔ [Enclave] Running example inside enclave...{}",
-        "✔ [Enclave] Creating data..."
-    );
+    info!("✔ [Enclave] Running example inside enclave!");
+    info!("✔ [Enclave] Creating data to save to db...");
     let mut enclave_scratch_pad: Vec<u8> = vec![0; SCRATCH_PAD_SIZE];
     let key: Bytes = vec![6, 6, 6];
     let value: Bytes = vec![1, 3, 3, 7];
