@@ -38,7 +38,7 @@ lazy_static! { // NOTE Gives us enc. as global but now can't destroy it!
                         );
                 },
                 Ok(mut f) => {
-                    println!("✔ Open token file success! ");
+                    println!("✔ [App] Open token file success! ");
                     match f.read(&mut launch_token) {
                         Ok(1024) => {
                             println!("✔ [App] Token file valid!");
