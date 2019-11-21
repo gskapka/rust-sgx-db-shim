@@ -58,6 +58,25 @@ __`❍ make`__
 __`❍ cd bin && RUST_LOG=trace ./app`__
 
 ```
+
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Running example inside enclave!
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Creating data to save to db...
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Sealing data...
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Key to seal: [6, 6, 6]
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Value to seal: [1, 3, 3, 7]
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Sealed data written into app's scratch-pad!
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Sending db key & sealed data size via OCALL...
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Saving sealed data into database...
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Sealed data saved to database successfully!
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Getting item from external db...
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Getting from database via OCALL...
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Data retreived from database!
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Copying data into enclave...
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] External data written to enclave's scratch pad!
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Final unsealed key: [6, 6, 6]
+[2019-11-21T12:21:02Z INFO  sealed_db_enc] ✔ [Enc] Final unsealed value: [1, 3, 3, 7]
+[2019-11-21T12:21:02Z INFO  sealed_db_app] ✔ [App] Sample run successfully!
+
 ```
 
 &nbsp;
