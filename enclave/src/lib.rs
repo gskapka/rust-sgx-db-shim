@@ -10,9 +10,15 @@ extern crate sgx_tseal;
 extern crate serde_derive;
 extern crate serde_cbor;
 
+pub mod ocall_api;
+
 use sgx_types::*;
 use sgx_tseal::SgxSealedData;
 use sgx_types::marker::ContiguousMemory;
+use ocall_api::{
+    save_to_db,
+    get_from_db,
+};
 use std::{
     u32,
     vec::Vec,
@@ -41,25 +47,6 @@ impl DatabaseKeyAndValue {
     }
 }
 
-// Ocall API
-#[no_mangle]
-extern "C" {
-    pub fn save_to_db(
-        ret_val: *mut sgx_status_t,
-        key_pointer: *mut u8,
-        key_size: *const u32,
-        sealed_log_size: *const u32,
-        scratch_pad_pointer: *mut u8,
-    ) -> sgx_status_t;
-
-    pub  fn get_from_db(
-        ret_val: *mut sgx_status_t,
-        key_pointer: *mut u8,
-        key_size: *const u32,
-        value_pointer: *mut u8,
-        value_size: *const u32,
-    ) -> sgx_status_t;
-}
 
 fn to_sealed_log_for_slice<T: Copy + ContiguousMemory>(
     sealed_data: &SgxSealedData<[T]>,

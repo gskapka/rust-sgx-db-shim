@@ -7,14 +7,14 @@ extern crate dirs;
 pub mod db;
 pub mod types;
 pub mod constants;
-pub mod enclave_api;
+pub mod ecall_api;
 pub mod scratch_pad;
 pub mod init_enclave;
 
 use sgx_types::*;
 use db::DATABASE;
 use init_enclave::ENCLAVE;
-use enclave_api::run_sample;
+use ecall_api::run_sample;
 use scratch_pad::SCRATCH_PAD;
 use scratch_pad::get_scratch_pad_pointer;
 use constants::SCRATCH_PAD_SIZE;
