@@ -26,7 +26,7 @@ fn get_from_db(
     key_pointer: *mut u8,
     key_size: u32,
     value_pointer: *mut u8,
-    value_size: u32,
+    _value_size: u32, // NOTE: Used only in EDL!
 ) -> sgx_status_t {
     println!("✔ [App] Getting from database via OCALL...");
     let db_key = unsafe {
